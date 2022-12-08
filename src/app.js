@@ -1,16 +1,17 @@
 import express from 'express'
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, getIdToken, getIdTokenResult } from 'firebase/auth'
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, getIdToken, getIdTokenResult} from 'firebase/auth'
 import { adminAuth } from '../config/database.js'
 import { auth, db } from '../firebase.js'
 // const express = require('express')
 const app = express()
 import cors from 'cors'
+import { addDoc, collection, getDoc, getDocs, onSnapshot, query, where } from 'firebase/firestore'
 // const cors = require('cors')
 const port = 3000
 
 // const db = require('../config/database')
 
-// const Users = db.collection('users')
+// const dbLink = db.collection('link')
 
 app.use(cors())
 app.use(express.json())     
@@ -20,16 +21,35 @@ app.listen(port, ()=> {
     console.log("udah jalan")
 })
 
-app.get("/get/user", async(req, res)=>{
+// app.get("/get/user", async(req, res)=>{
+//     try {
+//         let currentUser = auth.currentUser
+//         res.send(currentUser)
+//     }
+//     catch(err){
+//         console.log(err)
+//     }
+// })
+app.get("/links", async(req, res)=>{
+    const uid = req.query.uid
     try {
-        let currentUser = auth.currentUser
-        res.send(currentUser)
+        let links = []
+        const q = query(collection(db, "link"), where ("UID", "==", uid ));
+        const unsubscribe = onSnapshot(q,
+            (querySnapshot) => {
+            querySnapshot.forEach((docSnap)=>{
+                let id = docSnap.id
+                links.push({id, ...docSnap.data()})
+            })
+            res.send(links)
+        })
     }
-    catch(err){
-        console.log(err)
-    }
-})
-app.post("/post/user",async(req,res)=>{
+        catch(err){
+            console.log(err)
+            res.send(err)
+        }
+    });
+app.post("/user",async(req,res)=>{
     let email = req.body.email
     let password = req.body.password
     console.log(email)
@@ -49,7 +69,7 @@ app.post("/post/user",async(req,res)=>{
     }
 })
 
-app.post("/post/login", async(req, res)=>{
+app.post("/login", async(req, res)=>{
     let email = req.body.email
     let password = req.body.password
     console.log("login", email)
@@ -60,7 +80,8 @@ app.post("/post/login", async(req, res)=>{
         .then((userCredential) => {
             res.send(userCredential.user)
             console.log("login jalan", userCredential.user.uid)
-            // document.cookie = userCredential.user.uid
+            res.send(userCredential.user.id)
+            console.log('cek')
         }) 
         
     }
@@ -68,5 +89,36 @@ app.post("/post/login", async(req, res)=>{
     {
         res.send(err)
         console.log('error login')
+    }
+})
+
+app.get("/logout", async(req, res) => {
+    try {
+        await signOut(auth).then(() => {
+            console.log("Berhasil Logout")
+            res.send("User Logout")
+        })
+    }
+    catch(err) {
+        console.log("Gagal Logout")
+        res.send("Gagal Logout")
+    }
+})
+
+app.post("/link", async(req, res) => {
+    try {
+        await addDoc(collection(db, "link"), {
+            oldLink: req.body.oldLink,
+            newLink: req.body.newLink,
+            UID: req.body.uid,
+            viewCount: 0
+        })
+        console.log("Menambakan Link ke")
+        res.send("Menambakan Link")
+    }
+    catch(err) {
+        console.log("Gagal Menambakan Link")
+        console.log(err)
+        res.send("Gagal Menambakan Link")
     }
 })
