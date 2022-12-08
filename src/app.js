@@ -1,11 +1,11 @@
 import express from 'express'
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, getIdToken, getIdTokenResult} from 'firebase/auth'
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, getIdToken, getIdTokenResult, signOut} from 'firebase/auth'
 import { adminAuth } from '../config/database.js'
 import { auth, db } from '../firebase.js'
 // const express = require('express')
 const app = express()
 import cors from 'cors'
-import { addDoc, collection, getDoc, getDocs, onSnapshot, query, where } from 'firebase/firestore'
+import { addDoc, collection, getDoc, getDocs, onSnapshot, query, where, deleteDoc, doc } from 'firebase/firestore'
 // const cors = require('cors')
 const port = 3000
 
@@ -101,6 +101,7 @@ app.get("/logout", async(req, res) => {
     }
     catch(err) {
         console.log("Gagal Logout")
+        console.log(err)
         res.send("Gagal Logout")
     }
 })
@@ -118,7 +119,18 @@ app.post("/link", async(req, res) => {
     }
     catch(err) {
         console.log("Gagal Menambakan Link")
-        console.log(err)
         res.send("Gagal Menambakan Link")
+    }
+})
+
+app.delete("/:id", async(req, res) => {
+    const {id} = req.params
+    try {
+        await deleteDoc(doc(db, "link", id));
+        console.log('sukses')
+    }
+    catch(err) {
+        console.log(err)
+        res.send("Gagal")
     }
 })
