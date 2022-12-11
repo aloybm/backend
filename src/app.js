@@ -18,7 +18,7 @@ app.use(express.json())
 app.use(express.urlencoded({extended:true}))
 
 app.listen(port, ()=> {
-    console.log("udah jalan")
+    console.log("Listening on port ", port)
 })
 
 // app.get("/get/user", async(req, res)=>{
@@ -30,6 +30,8 @@ app.listen(port, ()=> {
 //         console.log(err)
 //     }
 // })
+
+// Get Link by UID
 app.get("/links", async(req, res)=>{
     const uid = req.query.uid
     try {
@@ -40,13 +42,17 @@ app.get("/links", async(req, res)=>{
                 let id = docSnap.id
                 links.push({id, ...docSnap.data()})
         })
+        console.log("Get Link")
         res.send(links)
     }
-        catch(err){
-            console.log(err)
-            res.send(err)
-        }
-    });
+    catch(err){
+        console.log(err)
+        console.log("Error Get Link")
+        res.send(err)
+    }
+});
+
+// Register
 app.post("/user",async(req,res)=>{
     let email = req.body.email
     let password = req.body.password
@@ -57,38 +63,38 @@ app.post("/user",async(req,res)=>{
         await createUserWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
             res.send(userCredential)
+            console.log("Register", userCredential)
         }) 
         
     }
     catch(err)
     {
         res.send(err)
-        console.log('error regis')
+        console.log(err)
+        console.log('Error Register')
     }
 })
 
+//Login
 app.post("/login", async(req, res)=>{
     let email = req.body.email
     let password = req.body.password
-    console.log("login", email)
-    console.log("login", password)
-    try
-    {
+    try {
         await signInWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
             res.send(userCredential.user)
-            console.log("login jalan", userCredential.user.uid)
+            console.log("Login ", userCredential.user.uid)
             res.send(userCredential.user.id)
         }) 
         
     }
-    catch(err)
-    {
+    catch(err) {
         res.send(err)
         console.log('error login')
     }
 })
 
+//Logout
 app.get("/logout", async(req, res) => {
     try {
         await signOut(auth).then(() => {
@@ -103,6 +109,7 @@ app.get("/logout", async(req, res) => {
     }
 })
 
+// Add Link
 app.post("/link", async(req, res) => {
     const linkRef = doc(db, "link", req.body.newLink)
     const docRef = await getDoc(linkRef)
@@ -126,19 +133,22 @@ app.post("/link", async(req, res) => {
     }
 })
 
+// Delete Link
 app.delete("/:id", async(req, res) => {
     const {id} = req.params
     try {
         await deleteDoc(doc(db, "link", id));
         res.send("Berhasil delete")
-        console.log('Delete')
+        console.log('Berhasil Delete')
     }
     catch(err) {
+        console.log("Gagal Delete Link")
         console.log(err)
         res.send("Gagal Delete")
     }
 })
 
+// Update Link
 app.post("/:id", async(req, res) => {
     const {id} = req.params
     const linkRef = doc(db, "link", req.body.newLink)
@@ -163,14 +173,15 @@ app.post("/:id", async(req, res) => {
     }
 })
 
+// Redirect
 app.get("/redirect", async(req, res)=>{
     const id = req.query.id
     const linkRef = doc(db, "link", id)
     const docRef = await getDoc(linkRef)
     try {
         if(docRef.exists()) {
-            console.log(docRef.get('oldLink'))
-            console.log("Redirect Link")
+            // console.log(docRef.get('oldLink'))
+            console.log("Redirect Link To ", docRef.get('oldLink'))
             res.send(docRef.get('oldLink'))
             await updateDoc(linkRef, {
                 viewCount: docRef.get('viewCount') + 1
